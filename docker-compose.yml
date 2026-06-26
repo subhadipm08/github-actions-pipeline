@@ -1,0 +1,26 @@
+services:
+  app:
+    build: ./app/
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
+    depends_on:
+      - db
+
+  db:
+    build: ./database/
+    command: mongod --port 6969
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+
