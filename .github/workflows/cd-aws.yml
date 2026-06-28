@@ -1,41 +1,58 @@
-name: Continuous Deployment (Direct Build on Aws Server)
+name: Deploy to AWS EC2
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["CD Pipeline"]   # Must exactly match the 'name:' in cd-dockerhub.yml
+    types:
+      - completed
 
 jobs:
-  deploy-directly-on-server:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-    # 🌟 Notice: We do NOT use actions/checkout here because the runner doesn't need the code!
-    
-    - name: Execute Remote SSH Commands on Server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: 22
-        script: |
-          # Navigate into your application workspace directory on the server
-          cd ~/github-actions-pipeline || (git clone git@github.com:${{ github.repository }}.git ~/github-actions-pipeline && cd ~/github-actions-pipeline)
-          
-          echo "🔄 Fetching latest code updates from main branch..."
-          git checkout main
-          git pull origin main
-          
-          echo "🚦 Stopping existing container stack to release resources..."
-          docker compose down
-          
-          echo "🏗️ Building new image and launching containers directly on server..."
-          docker compose up -d --build
-          
-          echo "⏳ Waiting for server processes to stabilize..."
-          sleep 10
-          
-          echo "🔍 Running internal server health check validation..."
-          curl --silent --fail http://localhost:${{secrets.PORT}}/ || (echo "❌ Production container crashed on boot! Printing logs:" && docker compose logs app && exit 1)
-          
-          echo "🚀 Deployment successfully completed entirely on target infrastructure!"
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/github-actions-pipeline"
+
+      - name: Deploy Application
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+
+            mkdir -p ~/github-actions-pipeline
+            cd ~/github-actions-pipeline
+
+            cat > .env <<EOF
+            PORT=${{ secrets.PORT }}
+            MONGO_PORT=${{ secrets.MONGO_PORT }}
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            NODE_ENV=production
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
+            MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+            EOF
+
+            docker compose pull
+
+            docker compose up -d --remove-orphans
+
+            echo "Waiting for application to start..."
+            sleep 15
+
+            curl --fail http://localhost:${{ secrets.PORT }}/
+
+            echo "Deployment Successful ✅"
