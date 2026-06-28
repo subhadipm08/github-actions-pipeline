@@ -28,4 +28,13 @@ jobs:
                 tags: |
                     ${{ secrets.DOCKERHUB_USERNAME }}/express-app:latest
                     ${{ secrets.DOCKERHUB_USERNAME }}/express-app:${{ github.sha }}
+
+        -   name: Build and Push DB Image
+            uses: docker/build-push-action@v5
+            with:
+                context: ./database
+                push: true
+                tags: |
+                    ${{ secrets.DOCKERHUB_USERNAME }}/my-app-db:latest
+                    ${{ secrets.DOCKERHUB_USERNAME }}/my-app-db:${{ github.sha }}
           
