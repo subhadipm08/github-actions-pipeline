@@ -18,9 +18,10 @@ jobs:
         echo "NODE_ENV=test" >> .env
         echo "MONGO_INITDB_ROOT_USERNAME=${{secrets.MONGO_INITDB_ROOT_USERNAME}}" >> .env
         echo "MONGO_INITDB_ROOT_PASSWORD=${{secrets.MONGO_INITDB_ROOT_PASSWORD}}" >> .env
+        
 
     - name: Start Stack via Docker Compose
-      run:  docker compose up -d --build
+      run:  docker compose -f docker-compose.ci.yml up -d --build
     
     - name: Execute Live App Sanity Check
       run: |

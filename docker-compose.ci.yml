@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: ./app/
+      dockerfile: Dockerfile
+
+    ports:
+      - "${PORT}:${PORT}"
+
+    environment:
+      PORT: ${PORT}
+      MONGO_URI: ${MONGO_URI}
+      NODE_ENV: test
+
+    depends_on:
+      - db
+
+  db:
+    build:
+      context: ./database/
+      dockerfile: Dockerfile
+
+    command: mongod --port 6969
+
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
