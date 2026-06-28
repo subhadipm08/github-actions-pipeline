@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: .
+      context: ./app/
       dockerfile: Dockerfile
 
     ports:
@@ -16,7 +16,9 @@ services:
       - db
 
   db:
-    image: mongo:6
+    build:
+      context: ./database/
+      dockerfile: Dockerfile
 
     command: mongod --port 6969
 
