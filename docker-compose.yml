@@ -1,7 +1,7 @@
 services:
   app:
     # Changed from build to image
-    image: ${DOCKERHUB_USERNAME}/${express-app}
+    image: ${DOCKERHUB_USERNAME}/express-app:latest
     ports:
       - "${PORT}:${PORT}"
     environment:
@@ -13,7 +13,7 @@ services:
 
   db:
     # Changed from build to image
-    image: ${DOCKERHUB_USERNAME}/my-app-db
+    image: ${DOCKERHUB_USERNAME}/my-app-db:latest
     command: mongod --port 6969
     ports:
       - "${MONGO_PORT}:${MONGO_PORT}"
